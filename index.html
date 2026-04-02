@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -8,18 +8,19 @@
 <style>
 body{
   margin:0;
-  font-family:Arial;
+  font-family:Arial, sans-serif;
   background:#111;
   color:#fff;
+  text-align: center;
 }
 
 /* TELAS */
-#mapaTela, #jogoTela{ display:none; }
-.active{ display:block; }
+#mapaTela, #jogoTela { display:none; padding: 20px; }
+.active { display:block !important; }
 
 /* MAPA */
 .mapa{
-  height:100vh;
+  min-height:100vh;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -28,8 +29,10 @@ body{
 
 .fases{
   display:flex;
+  flex-wrap: wrap;
   gap:20px;
   margin-top:20px;
+  justify-content: center;
 }
 
 .fase{
@@ -40,60 +43,73 @@ body{
   align-items:center;
   justify-content:center;
   font-size:22px;
+  font-weight: bold;
+  transition: 0.3s;
 }
 
-.liberada{ background:#00c853; cursor:pointer; }
-.bloqueada{ background:#555; }
+.liberada{ background:#00c853; cursor:pointer; color: white; }
+.liberada:hover { transform: scale(1.1); }
+.bloqueada{ background:#555; cursor: not-allowed; opacity: 0.5; }
 
 /* JOGO */
 .container{
   display:flex;
-  height:65vh;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 30px;
+  margin-top: 20px;
 }
 
-.left{ width:50%; padding:10px; }
-.right{
-  width:50%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
+.left{ text-align: left; background: #222; padding: 15px; border-radius: 8px; }
+.right{ display:flex; justify-content:center; align-items:center; }
 
 .binary{
-  font-family:monospace;
-  letter-spacing:3px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 5px;
+  font-size: 20px;
+  line-height: 32px;
 }
 
 .grid{
   display:grid;
-  gap:2px;
+  gap:4px;
 }
 
 .cell{
-  width:30px;
-  height:30px;
+  width:28px;
+  height:28px;
   background:white;
   cursor:pointer;
+  border: 1px solid #444;
 }
 
 .cell.active{ background:black; }
-.cell.correct{ background:#00c853; }
-.cell.wrong{ background:#d50000; }
+.cell.correct{ background:#00c853 !important; }
+.cell.wrong{ background:#d50000 !important; }
 
 /* AVATAR */
 #avatar{
-  position:absolute;
+  position:fixed;
   bottom:10px;
   left:10px;
-  width:50px;
+  width:60px;
   transition: left 0.5s;
+  z-index: 100;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+    font-weight: bold;
 }
 
 /* RESPONSIVO */
 @media(max-width:768px){
-  .container{ flex-direction:column; }
-  .left,.right{ width:100%; }
-  .cell{ width:20px;height:20px; }
+  .container{ flex-direction:column; align-items: center; }
+  .cell{ width:22px; height:22px; }
 }
 </style>
 </head>
@@ -108,7 +124,7 @@ body{
 
 <!-- JOGO -->
 <div id="jogoTela">
-  <button onclick="voltarMapa()">⬅ Voltar</button>
+  <button onclick="voltarMapa()" style="background: #555; color: white;">⬅ Voltar</button>
   <h2>🧠 Desafio Binário</h2>
 
   <div class="container">
@@ -119,261 +135,161 @@ body{
   </div>
 
   <br>
-  <button onclick="validar()">✔ Validar</button>
-  <button onclick="limpar()">🧹 Limpar</button>
-  <button onclick="resetar()">🔄 Resetar Progresso</button>
+  <button onclick="validar()" style="background: #00c853; color: white;">✔ Validar</button>
+  <button onclick="limpar()" style="background: #ff9100; color: white;">🧹 Limpar</button>
+  <button onclick="resetar()" style="background: #d50000; color: white;">🔄 Resetar Tudo</button>
 
   <h3>🏆 Pontuação: <span id="score">0</span></h3>
 </div>
 
-<!-- AVATAR -->
 <img id="avatar" src="https://i.imgur.com/6X12F8P.png">
 
-<!-- SONS -->
-<audio id="somAcerto" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-<audio id="somErro" src="https://actions.google.com/sounds/v1/cartoon/boing.ogg"></audio>
-
 <script>
-
-/* =========================
-   ESTADO GLOBAL
-========================= */
-
+/* ESTADO GLOBAL */
 let imagemAtual = [];
+let faseAtivaIdx = 0;
 let score = parseInt(localStorage.getItem("score")) || 0;
-let serie = "3";
+let serie = "3"; 
 
-/* progresso por série */
-let progresso = JSON.parse(localStorage.getItem("progresso")) || {
-  "3":0,
-  "4":0,
-  "5":0
-};
-
-/* =========================
-   FASES (mantido + expandido)
-========================= */
+let progresso = JSON.parse(localStorage.getItem("progresso")) || { "3":0, "4":0, "5":0 };
 
 const fases = {
   "3": [
-    ["00000","00100","01110","00100","00000"],
-    ["00000","01110","11111","01110","00000"]
+    ["00100","01110","11111","01110","00100"],
+    ["01110","11111","11111","11111","01110"]
   ],
   "4": [
-    ["0000000000","0011111100","0111111110","0011111100","0000000000"],
-    ["0000000000","0001111000","0011111100","0001111000","0000000000"]
+    ["001100","011110","111111","111111","011110","001100"]
   ],
   "5": [
-    ["000000000000","001111111100","011111111110","001111111100","000000000000"]
+    ["000111000","001111100","011111110","111111111","011111110","001111110"]
   ]
 };
-
-/* =========================
-   SONS
-========================= */
 
 const somAcerto = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
 const somErro = new Audio("https://actions.google.com/sounds/v1/cartoon/boing.ogg");
 
-/* =========================
-   AVATAR
-========================= */
-
-function animarAvatar(){
-  let avatar = document.getElementById("avatar");
-
-  if(!avatar){
-    avatar = document.createElement("img");
-    avatar.id = "avatar";
-    avatar.src = "https://i.imgur.com/6X12F8P.png";
-    avatar.style.position = "fixed";
-    avatar.style.bottom = "10px";
-    avatar.style.left = "10px";
-    avatar.style.width = "50px";
-    document.body.appendChild(avatar);
-  }
-
-  let pos = parseInt(avatar.style.left) || 10;
-  pos += 50;
-  avatar.style.left = pos + "px";
+/* FUNÇÕES DE NAVEGAÇÃO */
+function desenharMapa() {
+    const container = document.getElementById("mapaFases");
+    container.innerHTML = "";
+    
+    // Simplificando: vamos mostrar as fases da série "3" como exemplo
+    fases[serie].forEach((f, index) => {
+        const btn = document.createElement("div");
+        const liberada = index <= progresso[serie];
+        btn.className = `fase ${liberada ? 'liberada' : 'bloqueada'}`;
+        btn.innerHTML = index + 1;
+        if(liberada) btn.onclick = () => irParaFase(index);
+        container.appendChild(btn);
+    });
 }
 
-/* =========================
-   TROCAR SÉRIE
-========================= */
-
-function setSerie(s){
-  serie = s;
-  carregarFase();
+function irParaFase(index) {
+    faseAtivaIdx = index;
+    imagemAtual = fases[serie][index];
+    document.getElementById("mapaTela").classList.remove("active");
+    document.getElementById("jogoTela").classList.add("active");
+    render();
 }
 
-/* =========================
-   CARREGAR FASE
-========================= */
-
-function carregarFase(){
-  const nivel = progresso[serie] || 0;
-  imagemAtual = fases[serie][nivel];
-  render();
+function voltarMapa() {
+    document.getElementById("jogoTela").classList.remove("active");
+    document.getElementById("mapaTela").classList.add("active");
+    desenharMapa();
 }
 
-/* =========================
-   RENDER (MANTIDO)
-========================= */
-
+/* RENDERIZAÇÃO DO JOGO */
 function render(){
   const grid = document.getElementById("grid");
   const binary = document.getElementById("binary");
-
   grid.innerHTML = "";
   binary.innerHTML = "";
 
-  let tamanho = imagemAtual[0].length;
-  grid.style.gridTemplateColumns = `repeat(${tamanho}, 1fr)`;
+  let colunas = imagemAtual[0].length;
+  grid.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
 
-  imagemAtual.forEach(linha => {
-
+  imagemAtual.forEach((linha, rIdx) => {
     const row = document.createElement("div");
     row.className = "binary";
-    row.textContent = linha.split("").join(" ");
+    row.textContent = linha; 
     binary.appendChild(row);
 
-    [...linha].forEach(bit => {
-
+    [...linha].forEach((bit, cIdx) => {
       const cell = document.createElement("div");
       cell.className = "cell";
-
+      cell.dataset.bit = bit;
       cell.onclick = () => {
         cell.classList.toggle("active");
-
-        const ativo = cell.classList.contains("active");
-
         cell.classList.remove("correct","wrong");
-
-        if(ativo && bit === "1"){
-          cell.classList.add("correct");
-        }
-        else if(ativo && bit === "0"){
-          cell.classList.add("wrong");
-        }
       };
-
       grid.appendChild(cell);
-
     });
-
   });
 }
-
-/* =========================
-   VALIDAR (MELHORADO)
-========================= */
 
 function validar(){
   const cells = document.querySelectorAll(".cell");
+  let tudoCerto = true;
 
-  let correto = true;
-  let i = 0;
+  cells.forEach(cell => {
+    const bitOriginal = cell.dataset.bit;
+    const estaAtivo = cell.classList.contains("active");
 
-  imagemAtual.forEach(linha=>{
-    [...linha].forEach(bit=>{
-      const ativo = cells[i].classList.contains("active");
-
-      if((bit==="1" && !ativo) || (bit==="0" && ativo)){
-        correto = false;
-      }
-      i++;
-    });
+    if (bitOriginal === "1") {
+        if (estaAtivo) cell.classList.add("correct");
+        else tudoCerto = false;
+    } else {
+        if (estaAtivo) {
+            cell.classList.add("wrong");
+            tudoCerto = false;
+        }
+    }
   });
 
-  if(correto){
+  if(tudoCerto){
     somAcerto.play();
-    alert("🎉 Acertou!");
-
+    alert("🎉 Excelente! Você decodificou a imagem!");
     score += 10;
-
-    /* progresso */
-    if(progresso[serie] < fases[serie].length - 1){
-      progresso[serie]++;
+    if(progresso[serie] === faseAtivaIdx && faseAtivaIdx < fases[serie].length -1) {
+        progresso[serie]++;
     }
-
     salvar();
-
     animarAvatar();
-
+    document.getElementById("score").textContent = score;
   } else {
     somErro.play();
-    alert("❌ Ainda não está correto");
   }
-
-  document.getElementById("score").textContent = score;
 }
 
-/* =========================
-   LIMPAR
-========================= */
-
 function limpar(){
-  document.querySelectorAll(".cell").forEach(c=>{
+  document.querySelectorAll(".cell").forEach(c => {
     c.classList.remove("active","correct","wrong");
   });
 }
-
-/* =========================
-   SALVAR
-========================= */
 
 function salvar(){
   localStorage.setItem("score", score);
   localStorage.setItem("progresso", JSON.stringify(progresso));
 }
 
-/* =========================
-   RESET (NOVO)
-========================= */
-
 function resetar(){
-  if(confirm("Deseja zerar o progresso?")){
+  if(confirm("Deseja zerar todo o progresso?")){
     localStorage.clear();
     location.reload();
   }
 }
 
-/* =========================
-   RANKING (MANTIDO)
-========================= */
-
-function salvarRanking(){
-  let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-  ranking.push(score);
-  ranking.sort((a,b)=>b-a);
-  ranking = ranking.slice(0,5);
-
-  localStorage.setItem("ranking", JSON.stringify(ranking));
-  mostrarRanking();
+function animarAvatar(){
+  let avatar = document.getElementById("avatar");
+  let pos = parseInt(avatar.style.left) || 10;
+  avatar.style.left = (pos + 100) + "px";
+  if(pos > window.innerWidth) avatar.style.left = "-60px";
 }
 
-function mostrarRanking(){
-  const ul = document.getElementById("ranking");
-  ul.innerHTML = "";
-
-  let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-
-  ranking.forEach(p=>{
-    const li = document.createElement("li");
-    li.textContent = p + " pontos";
-    ul.appendChild(li);
-  });
-}
-
-/* =========================
-   INICIAR
-========================= */
-
+/* INICIAR */
 document.getElementById("score").textContent = score;
-carregarFase();
-mostrarRanking();
-
+desenharMapa();
 </script>
 
 </body>
