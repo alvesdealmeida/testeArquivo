@@ -3,37 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Binário PRO - Upload Mode</title>
+    <title>Pixel Binário Ultra - Educator Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        :root {
+            --bg: #0f0f0f;
+            --panel: #1a1a1a;
+            --accent: #00ff41;
+            --correct: #00c853;
+            --wrong: #d50000;
+        }
+
         body {
             margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: #111;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
             color: #fff;
             text-align: center;
+            overflow-x: hidden;
         }
 
-        /* ESTADOS DE TELA */
-        #telaInicial, #jogoTela { display: none; padding: 20px; }
-        .active { display: block !important; }
+        /* TELAS */
+        .screen { display: none; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+        .active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* UPLOAD AREA */
-        .upload-box {
-            border: 2px dashed #444;
-            padding: 40px;
-            margin: 20px auto;
+        /* MENU INICIAL */
+        .menu-card {
+            background: var(--panel);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             max-width: 500px;
-            background: #1a1a1a;
-            border-radius: 15px;
+            width: 90%;
         }
 
-        /* SPLIT SCREEN */
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+
+        /* JOGO SPLIT SCREEN */
+        .game-header { width: 100%; display: flex; justify-content: space-between; padding: 10px 20px; box-sizing: border-box; }
+
         .split-container {
             display: flex;
-            width: 100vw;
-            height: 65vh;
-            margin: 20px 0;
+            width: 100%;
+            flex-grow: 1;
+            margin: 15px 0;
             border-top: 2px solid #333;
         }
 
@@ -41,87 +54,105 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            overflow: auto;
-            padding: 10px;
+            justify-content: center;
+            padding: 15px;
+            min-height: 300px;
         }
 
-        .left-pane { background: #0d0d0d; border-right: 2px solid #333; }
+        .left-pane { background: #050505; border-right: 2px solid #333; }
         .right-pane { background: #111; }
 
+        /* BINÁRIO E GRID */
         .binary-list {
             font-family: 'Courier New', monospace;
-            color: #00ff41;
-            font-size: 1.5rem;
-            letter-spacing: 5px;
-            line-height: 1.4;
-            text-align: left;
+            color: var(--accent);
+            font-size: clamp(1rem, 2.5vw, 1.8rem);
+            letter-spacing: 4px;
+            line-height: 1.3;
+            text-shadow: 0 0 5px var(--accent);
         }
 
-        .grid { display: grid; gap: 2px; background: #444; padding: 2px; }
+        .grid { display: grid; gap: 2px; background: #333; padding: 3px; border-radius: 4px; }
         .cell {
-            width: 25px;
-            height: 25px;
+            width: clamp(18px, 5vw, 32px);
+            height: clamp(18px, 5vw, 32px);
             background: white;
             cursor: pointer;
+            border-radius: 1px;
         }
         .cell.active { background: #222; }
-        .cell.correct { background: #00c853 !important; }
-        .cell.wrong { background: #d50000 !important; }
+        .cell.correct { background: var(--correct) !important; }
+        .cell.wrong { background: var(--wrong) !important; }
 
         /* BOTÕES */
-        button {
-            padding: 12px 25px; margin: 10px; border: none; border-radius: 8px;
+        button, .label-file {
+            padding: 12px 20px; border: none; border-radius: 8px;
             font-weight: bold; cursor: pointer; text-transform: uppercase;
+            transition: 0.2s; font-size: 14px;
         }
-        .btn-upload { background: #2196f3; color: white; }
-        .btn-validar { background: #00c853; color: white; }
-        .btn-download { background: #9c27b0; color: white; }
+        button:hover { opacity: 0.8; transform: scale(1.02); }
+        .btn-primary { background: #2196f3; color: white; }
+        .btn-success { background: var(--correct); color: white; }
+        .btn-danger { background: var(--wrong); color: white; }
+        .btn-ghost { background: #444; color: white; }
 
         input[type="file"] { display: none; }
 
+        /* AJUSTES CELULAR/TABLET */
         @media (max-width: 768px) {
-            .split-container { flex-direction: column; height: auto; }
-            .cell { width: 20px; height: 20px; }
+            .split-container { flex-direction: column; }
+            .left-pane { border-right: none; border-bottom: 2px solid #333; min-height: 200px; }
+            .pane { padding: 20px 10px; }
+            .binary-list { letter-spacing: 2px; }
         }
     </style>
 </head>
 <body>
 
-<!-- TELA INICIAL / UPLOAD -->
-<div id="telaInicial" class="active">
-    <h1>🖼️ Criador de Desafio Binário</h1>
-    <p>Faça upload de uma imagem simples (ícone ou desenho) para transformar em jogo.</p>
-    
-    <div class="upload-box">
-        <label for="fileInput" class="btn-upload" style="display: inline-block; cursor: pointer; padding: 15px 30px;">
-            📁 Selecionar Imagem
-        </label>
-        <input type="file" id="fileInput" accept="image/*">
-        <p id="fileName" style="margin-top: 15px; color: #888;">Nenhum arquivo selecionado</p>
-        <small>Recomendado: Imagens pequenas (ex: 20x20 pixels)</small>
+<!-- TELA INICIAL -->
+<div id="telaMenu" class="screen active">
+    <div class="menu-card">
+        <h1>👾 Pixel Binário PRO</h1>
+        <p>Escolha como deseja jogar:</p>
+        
+        <div class="btn-group">
+            <button class="btn-success" onclick="iniciarDesafioFixo()">🎮 Desafios do Sistema</button>
+            
+            <label for="fileInput" class="label-file btn-primary">
+                📁 Upload de Imagem (Criar Desafio)
+            </label>
+            <input type="file" id="fileInput" accept="image/*">
+            
+            <p style="font-size: 11px; color: #888; margin-top: 10px;">
+                Dica: O upload funciona melhor com ícones simples ou desenhos em P&B.
+            </p>
+        </div>
     </div>
 </div>
 
 <!-- TELA DO JOGO -->
-<div id="jogoTela">
-    <button onclick="location.reload()" style="background:#555; color:white;">⬅ Novo Desafio</button>
+<div id="jogoTela" class="screen">
+    <div class="game-header">
+        <button class="btn-ghost" onclick="irParaHome()">⬅ Sair</button>
+        <div id="statusFase">Desafio Ativo</div>
+    </div>
     
     <div class="split-container" id="captureTarget">
         <div class="pane left-pane">
-            <h3 style="color: #666;">CÓDIGO GERADO</h3>
+            <span style="color: #555; margin-bottom: 10px; font-size: 12px;">CÓDIGO BINÁRIO</span>
             <div id="binaryDisplay" class="binary-list"></div>
         </div>
         <div class="pane right-pane">
-            <h3 style="color: #666;">DESENHE AQUI</h3>
+            <span style="color: #555; margin-bottom: 10px; font-size: 12px;">TABULEIRO DE PIXELS</span>
             <div id="gridDisplay" class="grid"></div>
         </div>
     </div>
 
     <div class="controls">
-        <button class="btn-validar" onclick="validar()">✔ Validar</button>
-        <button class="btn-download" onclick="baixarDesafio()">📥 Baixar para Alunos</button>
+        <button class="btn-success" onclick="validar()">✔ Validar</button>
+        <button class="btn-primary" onclick="baixarDesafio()">📥 Baixar PNG</button>
+        <button class="btn-ghost" onclick="limpar()">🧹 Limpar</button>
     </div>
 </div>
 
@@ -133,70 +164,60 @@
     const ctx = helperCanvas.getContext('2d');
     
     let mapaBinario = [];
+    let desafiosProntos = [
+        ["0001111000","0011111100","0111111110","1111111111","1100110011","1100110011","1111111111","0110000110","0011111100","0001111000"], // Alien
+        ["0000110000","0001111000","0011111100","0111111110","1111111111","0000110000","0000110000","0000110000","0011111100","0111111110"], // Árvore/Seta
+        ["111111111111","100000000001","101111111101","101000000101","101011110101","101010010101","101010010101","101011110101","101000000101","101111111101","100000000001","111111111111"] // Labirinto 12x12
+    ];
 
+    // LÓGICA DE UPLOAD
     fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
-
-        document.getElementById('fileName').textContent = file.name;
         const reader = new FileReader();
-
-        reader.onload = function(event) {
+        reader.onload = (event) => {
             const img = new Image();
-            img.onload = function() {
-                processarImagem(img);
-            };
+            img.onload = () => processarImagem(img);
             img.src = event.target.result;
         };
         reader.readAsDataURL(file);
     });
 
     function processarImagem(img) {
-        // Redimensiona para um tamanho jogável (máximo 30px de largura/altura)
-        let w = img.width;
-        let h = img.height;
-        const max = 25; 
-
+        let w = img.width, h = img.height;
+        const max = 20; // Limite para celular não travar
         if (w > max || h > max) {
             const ratio = Math.min(max / w, max / h);
-            w = Math.floor(w * ratio);
-            h = Math.floor(h * ratio);
+            w = Math.floor(w * ratio); h = Math.floor(h * ratio);
         }
-
-        helperCanvas.width = w;
-        helperCanvas.height = h;
+        helperCanvas.width = w; helperCanvas.height = h;
         ctx.drawImage(img, 0, 0, w, h);
-
-        const imgData = ctx.getImageData(0, 0, w, h).data;
+        const data = ctx.getImageData(0, 0, w, h).data;
         mapaBinario = [];
-
         for (let y = 0; y < h; y++) {
             let linha = "";
             for (let x = 0; x < w; x++) {
                 const i = (y * w + x) * 4;
-                const r = imgData[i];
-                const g = imgData[i+1];
-                const b = imgData[i+2];
-                const alpha = imgData[i+3];
-
-                // Critério: se for escuro ou opaco, vira 1. Se for claro ou transparente, vira 0.
-                const luminosidade = (r + g + b) / 3;
-                linha += (luminosidade < 128 && alpha > 50) ? "1" : "0";
+                const lum = (data[i] + data[i+1] + data[i+2]) / 3;
+                linha += (lum < 128 && data[i+3] > 50) ? "1" : "0";
             }
             mapaBinario.push(linha);
         }
-
-        iniciarJogo(w);
+        montarJogo(w);
     }
 
-    function iniciarJogo(colunas) {
-        document.getElementById('telaInicial').classList.remove('active');
-        document.getElementById('jogoTela').classList.add('active');
+    // LÓGICA DESAFIOS FIXOS
+    function iniciarDesafioFixo() {
+        const desafio = desafiosProntos[Math.floor(Math.random() * desafiosProntos.length)];
+        mapaBinario = desafio;
+        montarJogo(desafio[0].length);
+    }
 
-        // Mostrar binários
+    function montarJogo(colunas) {
+        document.getElementById('telaMenu').classList.remove('active');
+        document.getElementById('jogoTela').classList.add('active');
         document.getElementById('binaryDisplay').innerHTML = mapaBinario.join('<br>');
 
-        // Criar Grid
         const grid = document.getElementById('gridDisplay');
         grid.innerHTML = "";
         grid.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
@@ -218,30 +239,43 @@
     function validar() {
         const cells = document.querySelectorAll('.cell');
         let erro = false;
-        
         cells.forEach(c => {
-            const is1 = c.dataset.bit === "1";
-            const active = c.classList.contains('active');
-
+            const is1 = c.dataset.bit === "1", active = c.classList.contains('active');
             if(is1 && active) c.classList.add('correct');
             else if(!is1 && active) { c.classList.add('wrong'); erro = true; }
             else if(is1 && !active) erro = true;
         });
+        if(!erro) alert("🎉 Sensacional! Desafio concluído.");
+        else alert("❌ Ops! A sequência binária não confere com o desenho.");
+    }
 
-        if(!erro) alert("🎉 Perfeito! A imagem foi decodificada corretamente.");
-        else alert("❌ Quase lá! Alguns pixels estão incorretos.");
+    function irParaHome() {
+        if(confirm("Deseja mesmo sair e perder o progresso atual?")) {
+            document.getElementById('jogoTela').classList.remove('active');
+            document.getElementById('telaMenu').classList.add('active');
+            fileInput.value = ""; 
+        }
+    }
+
+    function limpar() {
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('active', 'correct', 'wrong'));
     }
 
     function baixarDesafio() {
         const target = document.getElementById('captureTarget');
-        // Limpa marcações de erro/acerto antes de baixar
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('correct', 'wrong', 'active'));
+        const originalState = [];
+        document.querySelectorAll('.cell').forEach(c => {
+            originalState.push(c.className);
+            c.className = 'cell'; // Limpa para a foto
+        });
         
-        html2canvas(target).then(canvas => {
+        html2canvas(target, { backgroundColor: '#0f0f0f' }).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'desafio-binario-personalizado.png';
+            link.download = 'atividade-binaria.png';
             link.href = canvas.toDataURL();
             link.click();
+            // Restaura o estado para o aluno continuar jogando
+            document.querySelectorAll('.cell').forEach((c, i) => c.className = originalState[i]);
         });
     }
 </script>
