@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo Binário PRO - Split Screen</title>
-    <!-- Biblioteca para exportar imagem -->
+    <title>Pixel Binário PRO - Upload Mode</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
@@ -12,32 +11,30 @@
             font-family: 'Segoe UI', sans-serif;
             background: #111;
             color: #fff;
-            overflow-x: hidden;
+            text-align: center;
         }
 
-        /* TELAS */
-        #mapaTela, #jogoTela { display: none; padding: 20px; text-align: center; }
+        /* ESTADOS DE TELA */
+        #telaInicial, #jogoTela { display: none; padding: 20px; }
         .active { display: block !important; }
 
-        /* MAPA */
-        .fases { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin: 20px 0; }
-        .fase { 
-            width: 60px; height: 60px; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; cursor: pointer; transition: 0.3s;
-            background: #333; border: 2px solid #444;
+        /* UPLOAD AREA */
+        .upload-box {
+            border: 2px dashed #444;
+            padding: 40px;
+            margin: 20px auto;
+            max-width: 500px;
+            background: #1a1a1a;
+            border-radius: 15px;
         }
-        .liberada { background: #00c853; border-color: #00e676; }
-        .bloqueada { opacity: 0.5; cursor: not-allowed; }
 
-        /* LAYOUT DIVIDIDO (SPLIT SCREEN) */
+        /* SPLIT SCREEN */
         .split-container {
             display: flex;
             width: 100vw;
-            height: 70vh;
-            margin-top: 20px;
-            border-top: 1px solid #333;
-            border-bottom: 1px solid #333;
+            height: 65vh;
+            margin: 20px 0;
+            border-top: 2px solid #333;
         }
 
         .pane {
@@ -46,34 +43,26 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            overflow: auto;
+            padding: 10px;
         }
 
-        .left-pane { background: #1a1a1a; border-right: 2px solid #333; }
+        .left-pane { background: #0d0d0d; border-right: 2px solid #333; }
         .right-pane { background: #111; }
-
-        /* ESTILOS DO JOGO */
-        #exportArea { 
-            padding: 20px; 
-            background: #1a1a1a; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-        }
 
         .binary-list {
             font-family: 'Courier New', monospace;
-            font-size: clamp(1.2rem, 3vw, 2.5rem);
             color: #00ff41;
-            line-height: 1.5;
+            font-size: 1.5rem;
             letter-spacing: 5px;
+            line-height: 1.4;
             text-align: left;
         }
 
-        .grid { display: grid; gap: 4px; background: #333; padding: 4px; border-radius: 4px; }
+        .grid { display: grid; gap: 2px; background: #444; padding: 2px; }
         .cell {
-            width: clamp(25px, 4vw, 40px);
-            height: clamp(25px, 4vw, 40px);
+            width: 25px;
+            height: 25px;
             background: white;
             cursor: pointer;
         }
@@ -82,152 +71,179 @@
         .cell.wrong { background: #d50000 !important; }
 
         /* BOTÕES */
-        .controls { margin-top: 20px; }
         button {
-            padding: 12px 20px; margin: 5px; border: none; border-radius: 5px;
+            padding: 12px 25px; margin: 10px; border: none; border-radius: 8px;
             font-weight: bold; cursor: pointer; text-transform: uppercase;
         }
-        .btn-main { background: #00c853; color: white; }
-        .btn-download { background: #2196f3; color: white; }
-        .btn-back { background: #555; color: white; }
+        .btn-upload { background: #2196f3; color: white; }
+        .btn-validar { background: #00c853; color: white; }
+        .btn-download { background: #9c27b0; color: white; }
 
-        @media (max-width: 600px) {
+        input[type="file"] { display: none; }
+
+        @media (max-width: 768px) {
             .split-container { flex-direction: column; height: auto; }
-            .left-pane { border-right: none; border-bottom: 2px solid #333; }
+            .cell { width: 20px; height: 20px; }
         }
     </style>
 </head>
 <body>
 
-<div id="mapaTela" class="active">
-    <h1>🧩 Pixel Binário PRO</h1>
-    <p>Selecione uma fase para jogar ou baixar o desafio</p>
-    <div id="mapaFases" class="fases"></div>
-    <h3>Score: <span id="mainScore">0</span></h3>
+<!-- TELA INICIAL / UPLOAD -->
+<div id="telaInicial" class="active">
+    <h1>🖼️ Criador de Desafio Binário</h1>
+    <p>Faça upload de uma imagem simples (ícone ou desenho) para transformar em jogo.</p>
+    
+    <div class="upload-box">
+        <label for="fileInput" class="btn-upload" style="display: inline-block; cursor: pointer; padding: 15px 30px;">
+            📁 Selecionar Imagem
+        </label>
+        <input type="file" id="fileInput" accept="image/*">
+        <p id="fileName" style="margin-top: 15px; color: #888;">Nenhum arquivo selecionado</p>
+        <small>Recomendado: Imagens pequenas (ex: 20x20 pixels)</small>
+    </div>
 </div>
 
+<!-- TELA DO JOGO -->
 <div id="jogoTela">
-    <button class="btn-back" onclick="voltarMapa()">⬅ Voltar</button>
+    <button onclick="location.reload()" style="background:#555; color:white;">⬅ Novo Desafio</button>
     
     <div class="split-container" id="captureTarget">
-        <!-- LADO ESQUERDO: CÓDIGO -->
         <div class="pane left-pane">
-            <h3 style="color: #888;">CÓDIGO BINÁRIO</h3>
+            <h3 style="color: #666;">CÓDIGO GERADO</h3>
             <div id="binaryDisplay" class="binary-list"></div>
         </div>
-
-        <!-- LADO DIREITO: GRID -->
         <div class="pane right-pane">
-            <h3 style="color: #888;">PAINEL DE PIXELS</h3>
+            <h3 style="color: #666;">DESENHE AQUI</h3>
             <div id="gridDisplay" class="grid"></div>
         </div>
     </div>
 
     <div class="controls">
-        <button class="btn-main" onclick="validar()">✔ Validar</button>
-        <button class="btn-download" onclick="baixarDesafio()">📥 Baixar Desafio</button>
-        <button onclick="limpar()" style="background:#ff9100; color:white;">🧹 Limpar</button>
+        <button class="btn-validar" onclick="validar()">✔ Validar</button>
+        <button class="btn-download" onclick="baixarDesafio()">📥 Baixar para Alunos</button>
     </div>
 </div>
 
+<canvas id="helperCanvas" style="display:none;"></canvas>
+
 <script>
-    const fases = {
-        "3": [
-            ["01110","10101","11111","10101","01110"],
-            ["11111","10001","10101","10001","11111"],
-            ["00100","01110","11111","01110","00100"]
-        ]
-    };
+    const fileInput = document.getElementById('fileInput');
+    const helperCanvas = document.getElementById('helperCanvas');
+    const ctx = helperCanvas.getContext('2d');
+    
+    let mapaBinario = [];
 
-    let serie = "3";
-    let faseIdx = 0;
-    let score = 0;
-    let progresso = 0;
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    function desenharMapa() {
-        const container = document.getElementById("mapaFases");
-        container.innerHTML = "";
-        fases[serie].forEach((f, i) => {
-            const div = document.createElement("div");
-            div.className = `fase ${i <= progresso ? 'liberada' : 'bloqueada'}`;
-            div.innerHTML = i + 1;
-            if(i <= progresso) div.onclick = () => iniciarJogo(i);
-            container.appendChild(div);
-        });
-        document.getElementById("mainScore").textContent = score;
+        document.getElementById('fileName').textContent = file.name;
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                processarImagem(img);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function processarImagem(img) {
+        // Redimensiona para um tamanho jogável (máximo 30px de largura/altura)
+        let w = img.width;
+        let h = img.height;
+        const max = 25; 
+
+        if (w > max || h > max) {
+            const ratio = Math.min(max / w, max / h);
+            w = Math.floor(w * ratio);
+            h = Math.floor(h * ratio);
+        }
+
+        helperCanvas.width = w;
+        helperCanvas.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const imgData = ctx.getImageData(0, 0, w, h).data;
+        mapaBinario = [];
+
+        for (let y = 0; y < h; y++) {
+            let linha = "";
+            for (let x = 0; x < w; x++) {
+                const i = (y * w + x) * 4;
+                const r = imgData[i];
+                const g = imgData[i+1];
+                const b = imgData[i+2];
+                const alpha = imgData[i+3];
+
+                // Critério: se for escuro ou opaco, vira 1. Se for claro ou transparente, vira 0.
+                const luminosidade = (r + g + b) / 3;
+                linha += (luminosidade < 128 && alpha > 50) ? "1" : "0";
+            }
+            mapaBinario.push(linha);
+        }
+
+        iniciarJogo(w);
     }
 
-    function iniciarJogo(idx) {
-        faseIdx = idx;
-        const dadosFase = fases[serie][idx];
-        document.getElementById("mapaTela").classList.remove("active");
-        document.getElementById("jogoTela").classList.add("active");
-        
-        // Renderizar Binário
-        const bDisplay = document.getElementById("binaryDisplay");
-        bDisplay.innerHTML = dadosFase.join("<br>");
+    function iniciarJogo(colunas) {
+        document.getElementById('telaInicial').classList.remove('active');
+        document.getElementById('jogoTela').classList.add('active');
 
-        // Renderizar Grid
-        const gDisplay = document.getElementById("gridDisplay");
-        gDisplay.innerHTML = "";
-        gDisplay.style.gridTemplateColumns = `repeat(${dadosFase[0].length}, 1fr)`;
+        // Mostrar binários
+        document.getElementById('binaryDisplay').innerHTML = mapaBinario.join('<br>');
 
-        dadosFase.forEach((linha, r) => {
-            [...linha].forEach((bit, c) => {
-                const cell = document.createElement("div");
-                cell.className = "cell";
+        // Criar Grid
+        const grid = document.getElementById('gridDisplay');
+        grid.innerHTML = "";
+        grid.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
+
+        mapaBinario.forEach(linha => {
+            [...linha].forEach(bit => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
                 cell.dataset.bit = bit;
                 cell.onclick = () => {
-                    cell.classList.toggle("active");
-                    cell.classList.remove("correct", "wrong");
+                    cell.classList.toggle('active');
+                    cell.classList.remove('correct', 'wrong');
                 };
-                gDisplay.appendChild(cell);
+                grid.appendChild(cell);
             });
         });
     }
 
     function validar() {
-        const cells = document.querySelectorAll(".cell");
+        const cells = document.querySelectorAll('.cell');
         let erro = false;
+        
         cells.forEach(c => {
             const is1 = c.dataset.bit === "1";
-            const active = c.classList.contains("active");
-            if(is1 && active) c.classList.add("correct");
-            else if(!is1 && active) { c.classList.add("wrong"); erro = true; }
+            const active = c.classList.contains('active');
+
+            if(is1 && active) c.classList.add('correct');
+            else if(!is1 && active) { c.classList.add('wrong'); erro = true; }
             else if(is1 && !active) erro = true;
         });
 
-        if(!erro) {
-            alert("🎉 Padrão Correto!");
-            score += 10;
-            if(faseIdx === progresso && progresso < fases[serie].length -1) progresso++;
-            voltarMapa();
-        } else {
-            alert("❌ Algo está errado. Tente novamente!");
-        }
+        if(!erro) alert("🎉 Perfeito! A imagem foi decodificada corretamente.");
+        else alert("❌ Quase lá! Alguns pixels estão incorretos.");
     }
 
     function baixarDesafio() {
-        const target = document.getElementById("captureTarget");
+        const target = document.getElementById('captureTarget');
+        // Limpa marcações de erro/acerto antes de baixar
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('correct', 'wrong', 'active'));
+        
         html2canvas(target).then(canvas => {
             const link = document.createElement('a');
-            link.download = `desafio-binario-fase${faseIdx+1}.png`;
+            link.download = 'desafio-binario-personalizado.png';
             link.href = canvas.toDataURL();
             link.click();
         });
     }
-
-    function voltarMapa() {
-        document.getElementById("jogoTela").classList.remove("active");
-        document.getElementById("mapaTela").classList.add("active");
-        desenharMapa();
-    }
-
-    function limpar() {
-        document.querySelectorAll(".cell").forEach(c => c.classList.remove("active", "correct", "wrong"));
-    }
-
-    desenharMapa();
 </script>
 </body>
 </html>
