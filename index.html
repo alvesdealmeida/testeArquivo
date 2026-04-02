@@ -3,241 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo Binário PRO</title>
+    <title>Jogo Binário PRO - Split Screen</title>
+    <!-- Biblioteca para exportar imagem -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background: #111;
             color: #fff;
-            text-align: center;
+            overflow-x: hidden;
         }
 
         /* TELAS */
-        #mapaTela, #jogoTela { display: none; padding: 20px; }
+        #mapaTela, #jogoTela { display: none; padding: 20px; text-align: center; }
         .active { display: block !important; }
 
-        /* MAPA E SELEÇÃO */
-        .mapa {
-            min-height: 100vh;
+        /* MAPA */
+        .fases { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin: 20px 0; }
+        .fase { 
+            width: 60px; height: 60px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+            background: #333; border: 2px solid #444;
+        }
+        .liberada { background: #00c853; border-color: #00e676; }
+        .bloqueada { opacity: 0.5; cursor: not-allowed; }
+
+        /* LAYOUT DIVIDIDO (SPLIT SCREEN) */
+        .split-container {
+            display: flex;
+            width: 100vw;
+            height: 70vh;
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+        }
+
+        .pane {
+            flex: 1;
             display: flex;
             flex-direction: column;
+            justify-content: center;
             align-items: center;
-            justify-content: center;
+            padding: 20px;
         }
 
-        .menu-series {
-            margin-bottom: 30px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
+        .left-pane { background: #1a1a1a; border-right: 2px solid #333; }
+        .right-pane { background: #111; }
 
-        .fases {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 20px;
-            justify-content: center;
-            max-width: 600px;
-        }
-
-        .fase {
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: bold;
-            transition: 0.3s;
-            border: 3px solid transparent;
-        }
-
-        .liberada { background: #00c853; cursor: pointer; color: white; border-color: #00e676; }
-        .liberada:hover { transform: scale(1.1); box-shadow: 0 0 15px #00c853; }
-        .bloqueada { background: #333; cursor: not-allowed; color: #777; border-color: #444; }
-
-        /* JOGO */
-        .container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 40px;
-            margin: 30px 0;
-        }
-
-        .left { 
-            text-align: left; 
-            background: #1a1a1a; 
+        /* ESTILOS DO JOGO */
+        #exportArea { 
             padding: 20px; 
-            border-radius: 10px;
-            box-shadow: inset 0 0 10px #000;
+            background: #1a1a1a; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
         }
 
-        .binary {
+        .binary-list {
             font-family: 'Courier New', monospace;
-            letter-spacing: 8px;
-            font-size: 24px;
-            line-height: 35px;
-            color: #00ff41; /* Estilo Matrix */
+            font-size: clamp(1.2rem, 3vw, 2.5rem);
+            color: #00ff41;
+            line-height: 1.5;
+            letter-spacing: 5px;
+            text-align: left;
         }
 
-        .grid { display: grid; gap: 5px; }
-
+        .grid { display: grid; gap: 4px; background: #333; padding: 4px; border-radius: 4px; }
         .cell {
-            width: 30px;
-            height: 30px;
-            background: #eee;
+            width: clamp(25px, 4vw, 40px);
+            height: clamp(25px, 4vw, 40px);
+            background: white;
             cursor: pointer;
-            border-radius: 2px;
-            transition: 0.2s;
         }
-
         .cell.active { background: #222; }
-        .cell.correct { background: #00c853 !important; border: 1px solid #fff; }
+        .cell.correct { background: #00c853 !important; }
         .cell.wrong { background: #d50000 !important; }
 
         /* BOTÕES */
+        .controls { margin-top: 20px; }
         button {
-            padding: 12px 25px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: 0.2s;
+            padding: 12px 20px; margin: 5px; border: none; border-radius: 5px;
+            font-weight: bold; cursor: pointer; text-transform: uppercase;
         }
+        .btn-main { background: #00c853; color: white; }
+        .btn-download { background: #2196f3; color: white; }
+        .btn-back { background: #555; color: white; }
 
-        button:active { transform: translateY(2px); }
-        .btn-serie { background: #444; color: white; }
-        .btn-serie.selecionada { background: #2196f3; box-shadow: 0 0 10px #2196f3; }
-
-        #avatar {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 60px;
-            transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-            pointer-events: none;
-        }
-
-        @media(max-width:768px){
-            .container { flex-direction: column; align-items: center; }
-            .binary { font-size: 18px; letter-spacing: 4px; }
-            .cell { width: 25px; height: 25px; }
+        @media (max-width: 600px) {
+            .split-container { flex-direction: column; height: auto; }
+            .left-pane { border-right: none; border-bottom: 2px solid #333; }
         }
     </style>
 </head>
 <body>
 
-<!-- TELA DO MAPA -->
-<div id="mapaTela" class="active mapa">
-    <h1>🚀 Jogo Binário PRO</h1>
-    
-    <div class="menu-series">
-        <button class="btn-serie selecionada" id="btn3" onclick="mudarSerie('3')">3ª Série</button>
-        <button class="btn-serie" id="btn4" onclick="mudarSerie('4')">4ª Série</button>
-        <button class="btn-serie" id="btn5" onclick="mudarSerie('5')">5ª Série</button>
-    </div>
-
-    <h2 id="tituloSerie">Fases - 3ª Série</h2>
+<div id="mapaTela" class="active">
+    <h1>🧩 Pixel Binário PRO</h1>
+    <p>Selecione uma fase para jogar ou baixar o desafio</p>
     <div id="mapaFases" class="fases"></div>
-    
-    <div style="margin-top: 40px;">
-        <h3>🏆 Total de Pontos: <span id="mainScore">0</span></h3>
-        <button onclick="resetar()" style="background: #444; font-size: 10px;">Resetar Progresso</button>
-    </div>
+    <h3>Score: <span id="mainScore">0</span></h3>
 </div>
 
-<!-- TELA DO JOGO -->
 <div id="jogoTela">
-    <button onclick="voltarMapa()" style="background: #555; color: white;">⬅ Voltar ao Mapa</button>
-    <h2 id="faseTitulo">Desafio</h2>
+    <button class="btn-back" onclick="voltarMapa()">⬅ Voltar</button>
+    
+    <div class="split-container" id="captureTarget">
+        <!-- LADO ESQUERDO: CÓDIGO -->
+        <div class="pane left-pane">
+            <h3 style="color: #888;">CÓDIGO BINÁRIO</h3>
+            <div id="binaryDisplay" class="binary-list"></div>
+        </div>
 
-    <div class="container">
-        <div id="binary" class="left"></div>
-        <div class="right">
-            <div id="grid" class="grid"></div>
+        <!-- LADO DIREITO: GRID -->
+        <div class="pane right-pane">
+            <h3 style="color: #888;">PAINEL DE PIXELS</h3>
+            <div id="gridDisplay" class="grid"></div>
         </div>
     </div>
 
-    <button onclick="validar()" style="background: #00c853; color: white; font-size: 18px;">✔ Validar Resposta</button>
-    <button onclick="limpar()" style="background: #ff9100; color: white;">🧹 Limpar</button>
-    
-    <h3>⭐ Pontuação: <span id="score">0</span></h3>
+    <div class="controls">
+        <button class="btn-main" onclick="validar()">✔ Validar</button>
+        <button class="btn-download" onclick="baixarDesafio()">📥 Baixar Desafio</button>
+        <button onclick="limpar()" style="background:#ff9100; color:white;">🧹 Limpar</button>
+    </div>
 </div>
 
-<img id="avatar" src="https://i.imgur.com/6X12F8P.png" alt="Avatar">
-
 <script>
-    /* ESTADO GLOBAL */
-    let serieAtual = "3";
-    let faseAtivaIdx = 0;
-    let imagemAtual = [];
-    let score = parseInt(localStorage.getItem("score_binario")) || 0;
-    
-    // Progresso salvo: se não existir, começa do zero em todas as séries
-    let progresso = JSON.parse(localStorage.getItem("progresso_binario")) || { "3": 0, "4": 0, "5": 0 };
-
-    /* BANCO DE FASES */
     const fases = {
         "3": [
-            ["00100","01110","11111","01110","00100"], // Cruz/Diamante
-            ["01110","11011","10001","11011","01110"], // Moldura
-            ["00000","01010","00000","10001","01110"]  // Carinha
-        ],
-        "4": [
-            ["001100","011110","111111","111111","011110","001100"],
-            ["100001","010010","001100","001100","010010","100001"]
-        ],
-        "5": [
-            ["000111000","001111100","011111110","111111111","011111110","001111110"],
-            ["111111111","100000001","101111101","101000101","101111101","100000001","111111111"]
+            ["01110","10101","11111","10101","01110"],
+            ["11111","10001","10101","10001","11111"],
+            ["00100","01110","11111","01110","00100"]
         ]
     };
 
-    const somAcerto = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
-    const somErro = new Audio("https://actions.google.com/sounds/v1/cartoon/boing.ogg");
-
-    /* NAVEGAÇÃO */
-    function mudarSerie(s) {
-        serieAtual = s;
-        // Atualiza visual dos botões
-        document.querySelectorAll('.btn-serie').forEach(b => b.classList.remove('selecionada'));
-        document.getElementById('btn' + s).classList.add('selecionada');
-        document.getElementById("tituloSerie").textContent = `Fases - ${s}ª Série`;
-        desenharMapa();
-    }
+    let serie = "3";
+    let faseIdx = 0;
+    let score = 0;
+    let progresso = 0;
 
     function desenharMapa() {
         const container = document.getElementById("mapaFases");
         container.innerHTML = "";
-        const nivelAlcancado = progresso[serieAtual];
-
-        fases[serieAtual].forEach((f, index) => {
-            const btn = document.createElement("div");
-            const liberada = index <= nivelAlcancado;
-            
-            btn.className = `fase ${liberada ? 'liberada' : 'bloqueada'}`;
-            btn.innerHTML = liberada ? index + 1 : "🔒";
-            
-            if(liberada) btn.onclick = () => irParaFase(index);
-            container.appendChild(btn);
+        fases[serie].forEach((f, i) => {
+            const div = document.createElement("div");
+            div.className = `fase ${i <= progresso ? 'liberada' : 'bloqueada'}`;
+            div.innerHTML = i + 1;
+            if(i <= progresso) div.onclick = () => iniciarJogo(i);
+            container.appendChild(div);
         });
         document.getElementById("mainScore").textContent = score;
     }
 
-    function irParaFase(index) {
-        faseAtivaIdx = index;
-        imagemAtual = fases[serieAtual][index];
+    function iniciarJogo(idx) {
+        faseIdx = idx;
+        const dadosFase = fases[serie][idx];
         document.getElementById("mapaTela").classList.remove("active");
         document.getElementById("jogoTela").classList.add("active");
-        document.getElementById("faseTitulo").textContent = `Série ${serieAtual} - Desafio ${index + 1}`;
-        render();
+        
+        // Renderizar Binário
+        const bDisplay = document.getElementById("binaryDisplay");
+        bDisplay.innerHTML = dadosFase.join("<br>");
+
+        // Renderizar Grid
+        const gDisplay = document.getElementById("gridDisplay");
+        gDisplay.innerHTML = "";
+        gDisplay.style.gridTemplateColumns = `repeat(${dadosFase[0].length}, 1fr)`;
+
+        dadosFase.forEach((linha, r) => {
+            [...linha].forEach((bit, c) => {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                cell.dataset.bit = bit;
+                cell.onclick = () => {
+                    cell.classList.toggle("active");
+                    cell.classList.remove("correct", "wrong");
+                };
+                gDisplay.appendChild(cell);
+            });
+        });
+    }
+
+    function validar() {
+        const cells = document.querySelectorAll(".cell");
+        let erro = false;
+        cells.forEach(c => {
+            const is1 = c.dataset.bit === "1";
+            const active = c.classList.contains("active");
+            if(is1 && active) c.classList.add("correct");
+            else if(!is1 && active) { c.classList.add("wrong"); erro = true; }
+            else if(is1 && !active) erro = true;
+        });
+
+        if(!erro) {
+            alert("🎉 Padrão Correto!");
+            score += 10;
+            if(faseIdx === progresso && progresso < fases[serie].length -1) progresso++;
+            voltarMapa();
+        } else {
+            alert("❌ Algo está errado. Tente novamente!");
+        }
+    }
+
+    function baixarDesafio() {
+        const target = document.getElementById("captureTarget");
+        html2canvas(target).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `desafio-binario-fase${faseIdx+1}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
     }
 
     function voltarMapa() {
@@ -246,100 +223,11 @@
         desenharMapa();
     }
 
-    /* LÓGICA DO JOGO */
-    function render() {
-        const grid = document.getElementById("grid");
-        const binary = document.getElementById("binary");
-        grid.innerHTML = "";
-        binary.innerHTML = "";
-
-        const colunas = imagemAtual[0].length;
-        grid.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
-
-        imagemAtual.forEach((linha) => {
-            const divLinha = document.createElement("div");
-            divLinha.className = "binary";
-            divLinha.textContent = linha;
-            binary.appendChild(divLinha);
-
-            [...linha].forEach(bit => {
-                const cell = document.createElement("div");
-                cell.className = "cell";
-                cell.dataset.bit = bit;
-                cell.onclick = () => {
-                    cell.classList.toggle("active");
-                    cell.classList.remove("correct", "wrong");
-                };
-                grid.appendChild(cell);
-            });
-        });
-    }
-
-    function validar() {
-        const cells = document.querySelectorAll(".cell");
-        let erro = false;
-
-        cells.forEach(cell => {
-            const deveEstarAtiva = cell.dataset.bit === "1";
-            const estaAtiva = cell.classList.contains("active");
-
-            if (deveEstarAtiva && estaAtiva) {
-                cell.classList.add("correct");
-            } else if (!deveEstarAtiva && estaAtiva) {
-                cell.classList.add("wrong");
-                erro = true;
-            } else if (deveEstarAtiva && !estaAtiva) {
-                erro = true;
-            }
-        });
-
-        if (!erro) {
-            somAcerto.play();
-            score += 10;
-            if (faseAtivaIdx === progresso[serieAtual] && faseAtivaIdx < fases[serieAtual].length - 1) {
-                progresso[serieAtual]++;
-            }
-            salvar();
-            animarAvatar();
-            document.getElementById("score").textContent = score;
-            setTimeout(() => {
-                alert("🎉 Parabéns! Você completou o padrão!");
-                voltarMapa();
-            }, 500);
-        } else {
-            somErro.play();
-        }
-    }
-
     function limpar() {
         document.querySelectorAll(".cell").forEach(c => c.classList.remove("active", "correct", "wrong"));
     }
 
-    function salvar() {
-        localStorage.setItem("score_binario", score);
-        localStorage.setItem("progresso_binario", JSON.stringify(progresso));
-    }
-
-    function resetar() {
-        if(confirm("Tem certeza que deseja apagar todo o seu progresso?")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    function animarAvatar() {
-        const avatar = document.getElementById("avatar");
-        let atual = parseInt(avatar.style.left) || 20;
-        avatar.style.left = (atual + 150) + "px";
-        if (atual > window.innerWidth) avatar.style.left = "-60px";
-    }
-
-    /* INICIALIZAÇÃO */
-    window.onload = () => {
-        document.getElementById("score").textContent = score;
-        desenharMapa();
-    };
+    desenharMapa();
 </script>
-
 </body>
 </html>
