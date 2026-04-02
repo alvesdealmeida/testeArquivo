@@ -121,6 +121,7 @@ body{
   <br>
   <button onclick="validar()">✔ Validar</button>
   <button onclick="limpar()">🧹 Limpar</button>
+  <button onclick="resetar()">🔄 Resetar Progresso</button>
 
   <h3>🏆 Pontuação: <span id="score">0</span></h3>
 </div>
@@ -134,152 +135,244 @@ body{
 
 <script>
 
-/* VARIÁVEIS */
-let faseAtual = 0;
-let score = parseInt(localStorage.getItem("score")) || 0;
+/* =========================
+   ESTADO GLOBAL
+========================= */
 
-const fases = [
- ["00000","00100","01110","00100","00000"],
- ["00000","01110","11111","01110","00000"],
- ["00100","01110","11111","01110","00100"],
- ["00100","00100","11111","00100","00100"]
-];
-
-let desbloqueadas = JSON.parse(localStorage.getItem("fases")) || [true,false,false,false];
 let imagemAtual = [];
+let score = parseInt(localStorage.getItem("score")) || 0;
+let serie = "3";
 
-/* MAPA */
-function renderMapa(){
-  const mapa = document.getElementById("mapaFases");
-  mapa.innerHTML="";
+/* progresso por série */
+let progresso = JSON.parse(localStorage.getItem("progresso")) || {
+  "3":0,
+  "4":0,
+  "5":0
+};
 
-  fases.forEach((_,i)=>{
-    const div = document.createElement("div");
+/* =========================
+   FASES (mantido + expandido)
+========================= */
 
-    div.className = "fase " + (desbloqueadas[i] ? "liberada":"bloqueada");
-    div.innerText = i+1;
+const fases = {
+  "3": [
+    ["00000","00100","01110","00100","00000"],
+    ["00000","01110","11111","01110","00000"]
+  ],
+  "4": [
+    ["0000000000","0011111100","0111111110","0011111100","0000000000"],
+    ["0000000000","0001111000","0011111100","0001111000","0000000000"]
+  ],
+  "5": [
+    ["000000000000","001111111100","011111111110","001111111100","000000000000"]
+  ]
+};
 
-    if(desbloqueadas[i]){
-      div.onclick = ()=>iniciarFase(i);
-    }
+/* =========================
+   SONS
+========================= */
 
-    mapa.appendChild(div);
-  });
+const somAcerto = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+const somErro = new Audio("https://actions.google.com/sounds/v1/cartoon/boing.ogg");
+
+/* =========================
+   AVATAR
+========================= */
+
+function animarAvatar(){
+  let avatar = document.getElementById("avatar");
+
+  if(!avatar){
+    avatar = document.createElement("img");
+    avatar.id = "avatar";
+    avatar.src = "https://i.imgur.com/6X12F8P.png";
+    avatar.style.position = "fixed";
+    avatar.style.bottom = "10px";
+    avatar.style.left = "10px";
+    avatar.style.width = "50px";
+    document.body.appendChild(avatar);
+  }
+
+  let pos = parseInt(avatar.style.left) || 10;
+  pos += 50;
+  avatar.style.left = pos + "px";
 }
 
-/* INICIAR */
-function iniciarFase(i){
-  faseAtual = i;
+/* =========================
+   TROCAR SÉRIE
+========================= */
 
-  document.getElementById("mapaTela").classList.remove("active");
-  document.getElementById("jogoTela").classList.add("active");
-
+function setSerie(s){
+  serie = s;
   carregarFase();
 }
 
-/* CARREGAR */
+/* =========================
+   CARREGAR FASE
+========================= */
+
 function carregarFase(){
-  imagemAtual = fases[faseAtual];
+  const nivel = progresso[serie] || 0;
+  imagemAtual = fases[serie][nivel];
   render();
 }
 
-/* RENDER */
+/* =========================
+   RENDER (MANTIDO)
+========================= */
+
 function render(){
   const grid = document.getElementById("grid");
   const binary = document.getElementById("binary");
 
-  grid.innerHTML="";
-  binary.innerHTML="";
+  grid.innerHTML = "";
+  binary.innerHTML = "";
 
-  grid.style.gridTemplateColumns = "repeat(5,1fr)";
+  let tamanho = imagemAtual[0].length;
+  grid.style.gridTemplateColumns = `repeat(${tamanho}, 1fr)`;
 
-  imagemAtual.forEach(linha=>{
+  imagemAtual.forEach(linha => {
 
     const row = document.createElement("div");
-    row.className="binary";
-    row.innerText = linha.split("").join(" ");
+    row.className = "binary";
+    row.textContent = linha.split("").join(" ");
     binary.appendChild(row);
 
-    [...linha].forEach(bit=>{
-      const cell = document.createElement("div");
-      cell.className="cell";
+    [...linha].forEach(bit => {
 
-      cell.onclick = ()=>{
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      cell.onclick = () => {
         cell.classList.toggle("active");
+
+        const ativo = cell.classList.contains("active");
+
+        cell.classList.remove("correct","wrong");
+
+        if(ativo && bit === "1"){
+          cell.classList.add("correct");
+        }
+        else if(ativo && bit === "0"){
+          cell.classList.add("wrong");
+        }
       };
 
       grid.appendChild(cell);
+
     });
 
   });
 }
 
-/* VALIDAR */
+/* =========================
+   VALIDAR (MELHORADO)
+========================= */
+
 function validar(){
   const cells = document.querySelectorAll(".cell");
 
-  let i=0;
-  let correto=true;
+  let correto = true;
+  let i = 0;
 
   imagemAtual.forEach(linha=>{
     [...linha].forEach(bit=>{
       const ativo = cells[i].classList.contains("active");
 
-      if((bit==="1" && !ativo)||(bit==="0" && ativo)){
-        correto=false;
+      if((bit==="1" && !ativo) || (bit==="0" && ativo)){
+        correto = false;
       }
       i++;
     });
   });
 
   if(correto){
-    document.getElementById("somAcerto").play();
+    somAcerto.play();
     alert("🎉 Acertou!");
 
-    score+=10;
-    localStorage.setItem("score",score);
+    score += 10;
 
-    if(faseAtual+1 < desbloqueadas.length){
-      desbloqueadas[faseAtual+1]=true;
-      localStorage.setItem("fases",JSON.stringify(desbloqueadas));
+    /* progresso */
+    if(progresso[serie] < fases[serie].length - 1){
+      progresso[serie]++;
     }
+
+    salvar();
 
     animarAvatar();
 
   } else {
-    document.getElementById("somErro").play();
-    alert("❌ Tente novamente");
+    somErro.play();
+    alert("❌ Ainda não está correto");
   }
 
-  document.getElementById("score").innerText=score;
+  document.getElementById("score").textContent = score;
 }
 
-/* LIMPAR */
+/* =========================
+   LIMPAR
+========================= */
+
 function limpar(){
   document.querySelectorAll(".cell").forEach(c=>{
-    c.classList.remove("active");
+    c.classList.remove("active","correct","wrong");
   });
 }
 
-/* VOLTAR */
-function voltarMapa(){
-  document.getElementById("jogoTela").classList.remove("active");
-  document.getElementById("mapaTela").classList.add("active");
-  renderMapa();
+/* =========================
+   SALVAR
+========================= */
+
+function salvar(){
+  localStorage.setItem("score", score);
+  localStorage.setItem("progresso", JSON.stringify(progresso));
 }
 
-/* AVATAR */
-function animarAvatar(){
-  const avatar = document.getElementById("avatar");
-  let pos = parseInt(avatar.style.left) || 10;
+/* =========================
+   RESET (NOVO)
+========================= */
 
-  pos += 80;
-  avatar.style.left = pos + "px";
+function resetar(){
+  if(confirm("Deseja zerar o progresso?")){
+    localStorage.clear();
+    location.reload();
+  }
 }
 
-/* START */
-document.getElementById("score").innerText=score;
-renderMapa();
+/* =========================
+   RANKING (MANTIDO)
+========================= */
+
+function salvarRanking(){
+  let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+  ranking.push(score);
+  ranking.sort((a,b)=>b-a);
+  ranking = ranking.slice(0,5);
+
+  localStorage.setItem("ranking", JSON.stringify(ranking));
+  mostrarRanking();
+}
+
+function mostrarRanking(){
+  const ul = document.getElementById("ranking");
+  ul.innerHTML = "";
+
+  let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+
+  ranking.forEach(p=>{
+    const li = document.createElement("li");
+    li.textContent = p + " pontos";
+    ul.appendChild(li);
+  });
+}
+
+/* =========================
+   INICIAR
+========================= */
+
+document.getElementById("score").textContent = score;
+carregarFase();
+mostrarRanking();
 
 </script>
 
