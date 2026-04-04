@@ -117,6 +117,7 @@
             border: 1px solid #333;
             margin-bottom: 20px;
             text-align: center;
+            line-height: 1.2;
         }
 
         .grid { 
@@ -232,27 +233,27 @@
     }
     initMatrix(); setInterval(drawMatrix, 50);
 
-    const BD_DESENHOS = [
-        [ // NÍVEL 1 (4x4)
+    const NIVEIS_DATA = [
+        [
             {m: ["0110", "1111", "1111", "0110"], n: "Cápsula"},
             {m: ["1001", "0110", "0110", "1001"], n: "X-Virus"},
             {m: ["0110", "1111", "0110", "0110"], n: "Espada"},
             {m: ["1111", "1001", "1001", "1111"], n: "Frame"},
-            {m: ["0110", "1111", "1111", "1001"], n: "Corpo"}
+            {m: ["1100", "1100", "0011", "0011"], n: "ZigZag"}
         ],
-        [ // NÍVEL 2 (6x6)
+        [
             {m: ["011110", "100001", "101101", "101101", "100001", "011110"], n: "Visor"},
-            {m: ["001100", "011110", "111111", "111111", "011110", "001100"], n: "Orb"},
-            {m: ["110011", "110011", "001100", "001100", "110011", "111111"], n: "Chip"},
-            {m: ["011110", "010010", "010010", "011110", "011110", "111111"], n: "Tanque"},
-            {m: ["001100", "001100", "111111", "111111", "110011", "110011"], n: "Torre"}
+            {m: ["001100", "011110", "111111", "111111", "011110", "001100"], n: "Orbital"},
+            {m: ["110011", "110011", "001100", "001100", "110011", "110011"], n: "DataHub"},
+            {m: ["111111", "100001", "101101", "101101", "100001", "111111"], n: "Microchip"},
+            {m: ["011110", "110011", "110011", "110011", "110011", "011110"], n: "Célula"}
         ],
-        [ // NÍVEL 3 (8x8)
-            {m: ["00111100", "01111110", "11011011", "11111111", "11111111", "11011011", "01111110", "00111100"], n: "Caveira"},
-            {m: ["00011000", "00111100", "01111110", "11111111", "00111100", "00111100", "01111110", "11111111"], n: "Foguete"},
-            {m: ["11111111", "10000001", "10111101", "10111101", "10111101", "10111101", "10000001", "11111111"], n: "Portal"},
-            {m: ["00111100", "01000010", "10100101", "10000001", "10011001", "10100101", "01000010", "00111100"], n: "Ghost"},
-            {m: ["11111111", "11011011", "11011011", "00000000", "00111100", "00111100", "00111100", "00111100"], n: "Martelo"}
+        [
+            {m: ["00111100", "01111110", "11011011", "11111111", "11111111", "11011011", "01111110", "00111100"], n: "Mainframe"},
+            {m: ["11111111", "10000001", "10111101", "10111101", "10111101", "10111101", "10000001", "11111111"], n: "Processador"},
+            {m: ["00011000", "00111100", "01111110", "11111111", "11111111", "01111110", "00111100", "00011000"], n: "Diamante"},
+            {m: ["11000011", "11100111", "01111110", "00111100", "00111100", "01111110", "11100111", "11000011"], n: "Nexus"},
+            {m: ["11111111", "11000011", "10111101", "10100101", "10100101", "10111101", "11000011", "11111111"], n: "Escudo"}
         ]
     ];
 
@@ -265,18 +266,16 @@
             alert("Acesso negado. Complete o módulo anterior!");
             return;
         }
-
         nivelAtual = idx;
         const temas = ["#00ff66", "#38bdf8", "#ff3e00"];
         document.documentElement.style.setProperty('--accent', temas[idx]);
         
-        // Sorteia um desenho da lista
-        const listaSorteio = BD_DESENHOS[idx];
-        const sorteado = listaSorteio[Math.floor(Math.random() * listaSorteio.length)];
+        const desenhosDoNivel = NIVEIS_DATA[idx];
+        const sorteio = desenhosDoNivel[Math.floor(Math.random() * desenhosDoNivel.length)];
         
-        mapaBinario = sorteado.m;
+        mapaBinario = sorteio.m;
         document.getElementById('statusFase').textContent = `MÓDULO 0${idx+1}`;
-        document.getElementById('nomeObjeto').textContent = sorteado.n;
+        document.getElementById('nomeObjeto').textContent = sorteio.n;
         montarJogo();
     }
 
@@ -288,7 +287,6 @@
         grid.innerHTML = "";
         const colunas = mapaBinario[0].length;
         grid.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
-        
         mapaBinario.forEach(linha => {
             [...linha].forEach(bit => {
                 const cell = document.createElement('div');
@@ -310,20 +308,20 @@
         });
 
         if(!erro) {
+            alert("✓ CÓDIGO COMPILADO COM SUCESSO!");
             if(nivelAtual === 2) {
-                alert("✓ SISTEMA TOTALMENTE DECODIFICADO! REINICIANDO MATRIX...");
-                progresso = 0;
-                localStorage.setItem('pixelProgresso', 0);
-            } else if(nivelAtual === progresso) {
-                alert("✓ CÓDIGO COMPILADO!");
-                progresso++;
-                localStorage.setItem('pixelProgresso', progresso);
+                alert("PARABÉNS! VOCÊ DECODIFICOU A MATRIX. O SISTEMA SERÁ REINICIADO.");
+                localStorage.removeItem('pixelProgresso');
+                location.reload(); 
             } else {
-                alert("✓ CÓDIGO COMPILADO!");
+                if(nivelAtual === progresso) {
+                    progresso++;
+                    localStorage.setItem('pixelProgresso', progresso);
+                }
+                irParaHome();
             }
-            irParaHome();
         } else {
-            alert("× ERRO NA SEQUÊNCIA!");
+            alert("× ERRO NA SEQUÊNCIA! Verifique os bits.");
         }
     }
 
@@ -336,15 +334,14 @@
     function atualizarBotoesMenu() {
         for(let i=0; i<3; i++) {
             const b = document.getElementById(`fase${i}`);
-            if(i <= progresso) {
-                b.classList.add('liberada');
-            } else {
-                b.classList.remove('liberada');
-            }
+            if(i <= progresso) b.classList.add('liberada');
+            else b.classList.remove('liberada');
         }
     }
 
+    // Lógica de Upload Corrigida e Integrada
     document.getElementById('fileInput').onchange = function(e) {
+        if (!e.target.files[0]) return;
         const reader = new FileReader();
         reader.onload = function(event) {
             const img = new Image();
@@ -352,32 +349,33 @@
                 const hCanvas = document.getElementById('helperCanvas');
                 const hCtx = hCanvas.getContext('2d');
                 
-                // Define tamanho do grid baseado no progresso (ou nível 1 por padrão)
+                // Define tamanho pelo progresso atual para não quebrar a lógica do nível
                 const sizes = [4, 6, 8];
-                const activeSize = sizes[progresso >= 3 ? 2 : progresso];
-                
-                hCanvas.width = activeSize; 
-                hCanvas.height = activeSize;
-                
-                hCtx.drawImage(img, 0, 0, activeSize, activeSize);
-                const pixels = hCtx.getImageData(0, 0, activeSize, activeSize).data;
+                const pSeguro = progresso > 2 ? 2 : progresso;
+                const size = sizes[pSeguro];
+                nivelAtual = pSeguro;
+
+                hCanvas.width = size; hCanvas.height = size;
+                hCtx.drawImage(img, 0, 0, size, size);
+                const pixels = hCtx.getImageData(0, 0, size, size).data;
                 
                 let novoMapa = [];
-                for (let y = 0; y < activeSize; y++) {
+                for (let y = 0; y < size; y++) {
                     let linha = "";
-                    for (let x = 0; x < activeSize; x++) {
-                        const i = (y * activeSize + x) * 4;
-                        // Cálculo de brilho (preto e branco)
+                    for (let x = 0; x < size; x++) {
+                        const i = (y * size + x) * 4;
                         const avg = (pixels[i] + pixels[i+1] + pixels[i+2]) / 3;
                         linha += (avg < 128) ? "1" : "0";
                     }
                     novoMapa.push(linha);
                 }
-                
-                // Injeta o mapa no jogo
+
                 mapaBinario = novoMapa;
-                nivelAtual = progresso >= 3 ? 2 : progresso;
-                document.getElementById('nomeObjeto').textContent = "EXTERNO.RAW";
+                const temas = ["#00ff66", "#38bdf8", "#ff3e00"];
+                document.documentElement.style.setProperty('--accent', temas[nivelAtual]);
+                document.getElementById('statusFase').textContent = `INJECTED_MÓDULO_0${nivelAtual+1}`;
+                document.getElementById('nomeObjeto').textContent = "EXT_DATA.RAW";
+                
                 montarJogo();
                 e.target.value = ""; 
             };
