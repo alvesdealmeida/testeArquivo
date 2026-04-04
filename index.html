@@ -265,13 +265,19 @@
         }
     }
 
-    /* REGRA HARD: RECARREGA A PÁGINA AO VOLTAR PARA O APP */
+    /* CORREÇÃO DEFINITIVA: BLOQUEIA CACHE E FORÇA RECARGA */
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
+        if (document.visibilityState === 'hidden') {
             const telaJogo = document.getElementById('jogoTela');
-            // Só recarrega se o usuário estiver de fato em uma fase ativa
-            if (telaJogo && telaJogo.classList.contains('active')) {
-                window.location.reload(); 
+            if (telaJogo.classList.contains('active')) {
+                // Ao sair, já marcamos para recarregar
+                sessionStorage.setItem('deveResetar', 'true');
+            }
+        } else if (document.visibilityState === 'visible') {
+            if (sessionStorage.getItem('deveResetar') === 'true') {
+                sessionStorage.removeItem('deveResetar');
+                // Adiciona um parâmetro aleatório na URL para ignorar o cache do navegador
+                window.location.href = window.location.pathname + "?" + Date.now();
             }
         }
     });
