@@ -93,7 +93,7 @@
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             font-weight: bold; font-size: 1rem;
-            cursor: pointer; transition: all 0.3s;
+            transition: all 0.3s;
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid rgba(255, 255, 255, 0.1);
             color: #4b5563;
@@ -106,11 +106,14 @@
             border-color: var(--accent-green);
             color: var(--accent-green);
             opacity: 1 !important;
+            cursor: pointer;
         }
 
         .fase-btn.bloqueada {
             cursor: not-allowed;
-            opacity: 0.4;
+            opacity: 0.3;
+            filter: grayscale(1);
+            pointer-events: none; /* Bloqueia clique no nível do navegador */
         }
 
         .fase-btn.bloqueada::after {
@@ -210,9 +213,10 @@
         <p style="font-size: 0.85rem; color: #9ca3af;">Lógica de Programação Visual</p>
         
         <div class="mapa-fases">
-            <div id="fase1" class="fase-btn" onclick="jogarFase(0)">1<span>Fácil</span></div>
-            <div id="fase2" class="fase-btn" onclick="jogarFase(1)">2<span>Médio</span></div>
-            <div id="fase3" class="fase-btn" onclick="jogarFase(2)">3<span>Difícil</span></div>
+            <!-- IDs mantidos, mas onclick removido do HTML para controle via script -->
+            <div id="fase1" class="fase-btn">1<span>Fácil</span></div>
+            <div id="fase2" class="fase-btn">2<span>Médio</span></div>
+            <div id="fase3" class="fase-btn">3<span>Difícil</span></div>
         </div>
 
         <div style="display: flex; justify-content: center;">
@@ -261,7 +265,7 @@
     let mapaBinario = [];
     let faseAtualIndex = 0;
     
-    // Carrega progresso ou inicia do zero
+    // Carrega progresso
     let faseDesbloqueada = parseInt(localStorage.getItem('progressoBinario')) || 0;
 
     const desafiosDoSistema = [
@@ -271,12 +275,21 @@
     ];
 
     function atualizarMapaVisual() {
+        // Recarrega o valor do progresso
+        faseDesbloqueada = parseInt(localStorage.getItem('progressoBinario')) || 0;
+
         for (let i = 0; i < 3; i++) {
             const btn = document.getElementById(`fase${i+1}`);
+            
+            // Remove evento de clique existente para evitar bugs
+            btn.onclick = null;
+
             if (i <= faseDesbloqueada) {
                 btn.classList.add('liberada');
                 btn.classList.remove('bloqueada');
                 btn.style.pointerEvents = "auto";
+                // Atribui a função de clique apenas se estiver liberada
+                btn.onclick = () => jogarFase(i);
             } else {
                 btn.classList.add('bloqueada');
                 btn.classList.remove('liberada');
@@ -286,58 +299,10 @@
     }
 
     function jogarFase(idx) {
-        if (idx <= faseDesbloqueada) {
-            faseAtualIndex = idx;
-            mapaBinario = desafiosDoSistema[idx].dados;
-            document.getElementById('statusFase').textContent = desafiosDoSistema[idx].nome;
-            montarJogo(mapaBinario[0].length);
-        }
-    }
-
-    // Gerenciador de visibilidade (anti-congelamento)
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden' && document.getElementById('jogoTela').classList.contains('active')) {
-            sessionStorage.setItem('resetsession', 'true');
-        } else if (document.visibilityState === 'visible' && sessionStorage.getItem('resetsession')) {
-            sessionStorage.removeItem('resetsession');
-            window.location.reload();
-        }
-    });
-
-    fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => processarImagem(img);
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    });
-
-    function processarImagem(img) {
-        let w = img.width, h = img.height;
-        const max = 20;
-        if (w > max || h > max) {
-            const ratio = Math.min(max / w, max / h);
-            w = Math.floor(w * ratio); h = Math.floor(h * ratio);
-        }
-        helperCanvas.width = w; helperCanvas.height = h;
-        ctx.drawImage(img, 0, 0, w, h);
-        const data = ctx.getImageData(0, 0, w, h).data;
-        mapaBinario = [];
-        for (let y = 0; y < h; y++) {
-            let linha = "";
-            for (let x = 0; x < w; x++) {
-                const i = (y * w + x) * 4;
-                const lum = (data[i] + data[i+1] + data[i+2]) / 3;
-                linha += (lum < 128 && data[i+3] > 50) ? "1" : "0";
-            }
-            mapaBinario.push(linha);
-        }
-        document.getElementById('statusFase').textContent = "Personalizado";
-        montarJogo(w);
+        faseAtualIndex = idx;
+        mapaBinario = desafiosDoSistema[idx].dados;
+        document.getElementById('statusFase').textContent = desafiosDoSistema[idx].nome;
+        montarJogo(mapaBinario[0].length);
     }
 
     function montarJogo(colunas) {
@@ -372,15 +337,15 @@
 
         if (!erro) {
             setTimeout(() => {
-                alert("🎉 Algoritmo Compilado!");
-                // Se completou a fase atual do progresso, libera a próxima
+                alert("🎉 Algoritmo Compilado com Sucesso!");
+                // Libera a próxima fase se for a atual
                 if (faseAtualIndex === faseDesbloqueada && faseDesbloqueada < 2) {
                     faseDesbloqueada++;
                     localStorage.setItem('progressoBinario', faseDesbloqueada);
                 }
                 irParaHome();
             }, 300);
-        } else { alert("❌ Erro de Sintaxe!"); }
+        } else { alert("❌ Erro de Sintaxe! Verifique os pixels."); }
     }
 
     function irParaHome() {
@@ -389,6 +354,50 @@
         fileInput.value = ""; 
         atualizarMapaVisual();
     }
+
+    // Gerenciador de visibilidade (anti-congelamento)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && document.getElementById('jogoTela').classList.contains('active')) {
+            sessionStorage.setItem('resetsession', 'true');
+        } else if (document.visibilityState === 'visible' && sessionStorage.getItem('resetsession')) {
+            sessionStorage.removeItem('resetsession');
+            window.location.reload();
+        }
+    });
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                const max = 20;
+                if (w > max || h > max) {
+                    const ratio = Math.min(max / w, max / h);
+                    w = Math.floor(w * ratio); h = Math.floor(h * ratio);
+                }
+                helperCanvas.width = w; helperCanvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+                const data = ctx.getImageData(0, 0, w, h).data;
+                mapaBinario = [];
+                for (let y = 0; y < h; y++) {
+                    let linha = "";
+                    for (let x = 0; x < w; x++) {
+                        const i = (y * w + x) * 4;
+                        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
+                        linha += (lum < 128 && data[i+3] > 50) ? "1" : "0";
+                    }
+                    mapaBinario.push(linha);
+                }
+                document.getElementById('statusFase').textContent = "Personalizado";
+                montarJogo(w);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 
     function limpar() { document.querySelectorAll('.cell').forEach(c => c.classList.remove('active', 'correct', 'wrong')); }
 
