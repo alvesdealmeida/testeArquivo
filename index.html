@@ -101,7 +101,6 @@
         }
         .fase-btn span { font-size: 0.55rem; text-transform: uppercase; margin-top: 2px; }
 
-        /* ESTADO LIBERADO */
         .fase-btn.liberada {
             background: rgba(0, 255, 102, 0.1);
             border-color: var(--accent-green);
@@ -109,9 +108,9 @@
             opacity: 1;
             cursor: pointer;
             pointer-events: auto !important;
+            box-shadow: 0 0 10px var(--accent-glow);
         }
 
-        /* ESTADO BLOQUEADO */
         .fase-btn.bloqueada {
             opacity: 0.3;
             filter: grayscale(1);
@@ -181,8 +180,8 @@
             border-radius: 3px;
         }
         .cell.active { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
-        .cell.correct { background: #10b981; }
-        .cell.wrong { background: #ef4444; }
+        .cell.correct { background: #10b981 !important; }
+        .cell.wrong { background: #ef4444 !important; }
 
         .controls { padding-bottom: 20px; }
         button.action-btn {
@@ -274,7 +273,6 @@
     ];
 
     function atualizarMapaVisual() {
-        // Se for a primeira vez, define progresso como 0 (apenas fase 1 aberta)
         if (localStorage.getItem('progressoBinario') === null) {
             localStorage.setItem('progressoBinario', '0');
         }
@@ -283,25 +281,15 @@
 
         for (let i = 0; i < 3; i++) {
             const btn = document.getElementById(`fase${i+1}`);
-            
-            // Remove clique anterior para evitar bugs
-            btn.onclick = null;
+            btn.onclick = null; // Limpa eventos
 
             if (i <= faseDesbloqueada) {
                 btn.classList.remove('bloqueada');
                 btn.classList.add('liberada');
-                // Atribui o evento de clique via JS para controle total
-                btn.onclick = (function(index) {
-                    return function() { jogarFase(index); };
-                })(i);
+                btn.onclick = () => jogarFase(i);
             } else {
                 btn.classList.remove('liberada');
                 btn.classList.add('bloqueada');
-                // Bloqueia clique
-                btn.onclick = function(e) { 
-                    e.preventDefault(); 
-                    return false; 
-                };
             }
         }
     }
@@ -312,6 +300,42 @@
         document.getElementById('statusFase').textContent = desafiosDoSistema[idx].nome;
         montarJogo(mapaBinario[0].length);
     }
+
+    /* MODO LIVRE / UPLOAD */
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                const max = 15;
+                if (w > max || h > max) {
+                    const ratio = Math.min(max / w, max / h);
+                    w = Math.floor(w * ratio); h = Math.floor(h * ratio);
+                }
+                helperCanvas.width = w; helperCanvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+                const data = ctx.getImageData(0, 0, w, h).data;
+                mapaBinario = [];
+                for (let y = 0; y < h; y++) {
+                    let linha = "";
+                    for (let x = 0; x < w; x++) {
+                        const i = (y * w + x) * 4;
+                        const lum = (data[i] + data[i+1] + data[i+2]) / 3;
+                        linha += (lum < 128 && data[i+3] > 50) ? "1" : "0";
+                    }
+                    mapaBinario.push(linha);
+                }
+                faseAtualIndex = -1; // Indica modo livre
+                document.getElementById('statusFase').textContent = "Modo Livre";
+                montarJogo(w);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 
     function montarJogo(colunas) {
         document.getElementById('telaMenu').classList.remove('active');
@@ -351,9 +375,10 @@
             setTimeout(() => {
                 alert("🎉 Algoritmo Compilado com Sucesso!");
                 
-                let progressoAtual = parseInt(localStorage.getItem('progressoBinario')) || 0;
-                // Só desbloqueia a próxima se for a fase atual que ele está tentando abrir
-                if (faseAtualIndex === progressoAtual) {
+                let progressoSalvo = parseInt(localStorage.getItem('progressoBinario')) || 0;
+                
+                // Se venceu a fase que era a última liberada, abre a próxima
+                if (faseAtualIndex === progressoSalvo) {
                     let novoProgresso = faseAtualIndex + 1;
                     if (novoProgresso > 2) novoProgresso = 2; 
                     localStorage.setItem('progressoBinario', novoProgresso.toString());
