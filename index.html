@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pixel Binário | Matrix Edition</title>
+    <title>Pixel Binário | Mobile Only</title>
     <style>
         :root {
             --bg: #000000;
             --accent: #00ff66;
             --text: #ffffff;
-            --secondary: #555555;
-            --cell-size: 45px; /* Padrão Desktop/Tablet */
+            --cell-size: 45px;
         }
 
         body, html {
@@ -20,8 +19,27 @@
             background-color: var(--bg);
             color: var(--text);
             overflow: hidden;
-            display: flex;
+        }
+
+        /* --- BLOQUEIO DESKTOP --- */
+        #desktop-blocker {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Ativa o bloqueio em telas maiores que 1024px (Laptops/PCs) */
+        @media (min-width: 1025px) {
+            #desktop-blocker { display: flex; }
+            #app-container, #matrixBg { display: none; }
         }
 
         #matrixBg {
@@ -29,7 +47,7 @@
             top: 0; left: 0;
             width: 100vw; height: 100vh;
             z-index: 1;
-            opacity: 0.25;
+            opacity: 0.2;
         }
 
         #app-container {
@@ -37,81 +55,42 @@
             z-index: 2;
             width: 100%; 
             height: 100%;
-            max-width: 500px; /* Restrição para Desktop: Estilo Terminal Vertical */
-            background: rgba(0,0,0,0.8);
             display: flex; 
             flex-direction: column;
-            border-left: 1px solid #222;
-            border-right: 1px solid #222;
-            box-shadow: 0 0 50px rgba(0,0,0,1);
         }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
         .active { display: flex; }
 
-        .menu-container { 
-            margin: auto; 
-            text-align: center; 
-            background: rgba(0,0,0,0.9); 
-            padding: 30px 15px; 
-            border-radius: 30px; 
-            border: 1px solid #333; 
-            width: 85%;
-        }
-
+        .menu-container { margin: auto; text-align: center; width: 90%; }
+        
         .fases-wrapper {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-            width: 100%;
+            gap: 15px;
+            margin: 30px 0;
         }
 
         .fase-btn { 
-            flex: 1; 
-            height: 85px; 
-            background: #0a0a0a; 
-            border: 2px solid #222; 
-            border-radius: 20px; 
-            color: #fff; 
-            cursor: not-allowed;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            font-weight: bold;
-            opacity: 0.3;
-            transition: 0.3s;
+            flex: 1; height: 100px; 
+            background: #0a0a0a; border: 2px solid #222; 
+            border-radius: 20px; color: #fff; 
+            font-size: 1.5rem; font-weight: bold;
+            opacity: 0.3; transition: 0.3s;
         }
         
-        .fase-btn small { font-size: 0.65rem; margin-top: 4px; opacity: 0.7; }
-
-        .fase-btn.liberada { 
-            border-color: var(--accent); 
-            opacity: 1; 
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
-        }
+        .fase-btn.liberada { border-color: var(--accent); opacity: 1; }
 
         .header-jogo {
-            width: 100%;
-            padding: 15px 20px;
-            box-sizing: border-box;
-            background: rgba(0, 0, 0, 0.95);
+            padding: 20px;
+            background: rgba(10, 10, 10, 0.95);
             border-bottom: 1px solid #222;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        #timer-display {
-            font-family: monospace;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #ff3e00;
-            text-shadow: 0 0 10px rgba(255, 62, 0, 0.5);
-        }
+        #timer-display { font-family: monospace; font-size: 1.8rem; color: #ff3e00; }
 
         .game-content {
             flex: 1;
@@ -119,137 +98,80 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 10px;
-            gap: 15px;
         }
 
         .binary-box {
-            font-family: 'Courier New', monospace;
-            background: rgba(5, 5, 5, 0.9);
-            padding: 12px;
+            font-family: monospace;
+            background: #0a0a0a;
+            padding: 15px;
             border-radius: 12px;
             color: var(--accent);
-            font-size: 1.1rem;
-            letter-spacing: 4px;
-            border: 1px solid #333;
-            text-align: center;
-            line-height: 1.2;
+            font-size: 1.2rem;
+            letter-spacing: 5px;
+            margin-bottom: 25px;
+            border: 1px solid #222;
         }
 
         .grid { 
-            display: grid; 
-            gap: 6px; 
-            padding: 12px; 
-            background: rgba(15, 15, 15, 0.95); 
-            border-radius: 12px; 
-            border: 1px solid #444;
+            display: grid; gap: 8px; padding: 15px; 
+            background: #0f0f0f; border-radius: 15px; 
         }
 
         .cell { 
-            width: var(--cell-size); 
-            height: var(--cell-size); 
-            background: rgba(60, 60, 60, 0.3); 
-            border-radius: 6px; 
-            border: 1px solid #555;
-            transition: 0.15s;
-            cursor: pointer;
+            width: var(--cell-size); height: var(--cell-size); 
+            background: #222; border-radius: 8px; 
         }
-        .cell.active { 
-            background: var(--accent); 
-            box-shadow: 0 0 15px var(--accent); 
-            border-color: #fff; 
-        }
+        .cell.active { background: var(--accent); box-shadow: 0 0 15px var(--accent); }
 
         .footer-controls {
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-            background: rgba(0, 0, 0, 0.95);
-            border-top: 1px solid #222;
-            display: flex;
-            gap: 12px;
+            padding: 25px;
+            display: flex; gap: 15px;
+            background: #000;
         }
 
         .btn-game {
-            flex: 1;
-            padding: 18px;
-            border-radius: 14px;
-            font-weight: 900;
-            text-transform: uppercase;
-            cursor: pointer;
-            border: none;
-            font-size: 1rem;
+            flex: 1; padding: 20px; border-radius: 15px;
+            font-weight: 900; border: none; text-transform: uppercase;
         }
         .btn-compilar { background: var(--accent); color: #000; }
         .btn-limpar { background: transparent; color: #fff; border: 1px solid #444; }
 
-        #fileInput { display: none; }
-        .upload-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: var(--accent);
-            text-decoration: underline;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-
-        /* --- RESPONSIVIDADE --- */
-
-        /* Tablets e Telas Médias */
-        @media (max-width: 768px) {
-            :root { --cell-size: 40px; }
-            #app-container { max-width: 100%; border: none; }
-        }
-
-        /* Celulares Pequenos (iPhone SE, etc) */
-        @media (max-width: 380px) {
-            :root { --cell-size: 32px; }
-            .binary-box { font-size: 0.9rem; letter-spacing: 2px; }
-            .fase-btn { height: 70px; font-size: 0.9rem; }
-            .header-jogo { padding: 10px 15px; }
-            #timer-display { font-size: 1.2rem; }
-            .btn-game { padding: 15px; font-size: 0.8rem; }
-        }
-
-        /* Ajuste para modo paisagem curto */
-        @media (max-height: 500px) {
-            .game-content { flex-direction: row; gap: 20px; }
-            :root { --cell-size: 28px; }
-            .menu-container { padding: 15px; }
+        /* Ajuste para celulares pequenos */
+        @media (max-width: 400px) {
+            :root { --cell-size: 35px; }
+            .binary-box { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
 
+<!-- MENSAGEM PARA USUÁRIOS DE PC -->
+<div id="desktop-blocker">
+    <h1 style="color: #ff3e00;">ACESSO NEGADO</h1>
+    <p>Este terminal de hacking é restrito a dispositivos portáteis (Mobile/Tablet).</p>
+    <div style="font-family: monospace; color: #555; margin-top: 20px;">ERR_DEVICE_NOT_SUPPORTED</div>
+</div>
+
 <canvas id="matrixBg"></canvas>
 
 <div id="app-container">
-    <!-- TELA MENU -->
     <div id="telaMenu" class="screen active">
         <div class="menu-container">
-            <h1 style="margin:0; letter-spacing:-1px; font-size: 2rem;">PIXEL BINÁRIO</h1>
-            <p style="color:var(--secondary); font-size:0.6rem; letter-spacing: 3px; margin-bottom:20px;">SYSTEM DECODER v2.0</p>
-            
+            <h1 style="font-size: 2.5rem; margin:0;">PIXEL BINÁRIO</h1>
+            <p style="color:var(--accent); letter-spacing: 3px; font-size: 0.8rem;">MOBILE DECODER</p>
             <div class="fases-wrapper">
-                <button id="fase0" class="fase-btn" onclick="jogarNivel(0)">01<br><small>Fácil</small></button>
-                <button id="fase1" class="fase-btn" onclick="jogarNivel(1)">02<br><small>Médio</small></button>
-                <button id="fase2" class="fase-btn" onclick="jogarNivel(2)">03<br><small>Hard</small></button>
+                <button id="fase0" class="fase-btn" onclick="jogarNivel(0)">01</button>
+                <button id="fase1" class="fase-btn" onclick="jogarNivel(1)">02</button>
+                <button id="fase2" class="fase-btn" onclick="jogarNivel(2)">03</button>
             </div>
-
-            <label for="fileInput" class="upload-link">INJETAR ARQUIVO .RAW</label>
-            <input type="file" id="fileInput" accept="image/*">
         </div>
     </div>
 
-    <!-- TELA JOGO -->
     <div id="jogoTela" class="screen">
         <div class="header-jogo">
-            <button onclick="irParaHome()" style="background:none; border:1px solid #444; color:#888; padding:8px 12px; border-radius:8px; cursor:pointer;">VOLTAR</button>
+            <button onclick="irParaHome()" style="background:none; border:1px solid #444; color:#888; padding:10px; border-radius:10px;">SAIR</button>
             <div id="timer-display">00:00</div>
-            <div style="text-align:right">
-                <div id="statusFase" style="color:var(--accent); font-weight:bold; font-size:0.6rem;">MOD_01</div>
-                <div id="nomeObjeto" style="font-weight:900; font-size:0.8rem;">DATA.EXE</div>
-            </div>
+            <div id="nomeObjeto" style="font-weight:bold; color:var(--accent);">DATA.EXE</div>
         </div>
         <div class="game-content">
             <div id="binaryDisplay" class="binary-box"></div>
@@ -262,140 +184,63 @@
     </div>
 </div>
 
-<canvas id="helperCanvas" style="display:none;"></canvas>
-
 <script>
-    // ÁUDIO CONTEXT (WEB AUDIO API)
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    function playSound(freq, type, duration, vol = 0.2) {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
+    function playSound(f, t, d) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = t; o.frequency.value = f; g.gain.value = 0.1;
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + d);
     }
 
-    const sfx = {
-        click: () => playSound(600, 'square', 0.05, 0.1),
-        win: () => {
-            playSound(400, 'sine', 0.2);
-            setTimeout(() => playSound(600, 'sine', 0.2), 100);
-            setTimeout(() => playSound(800, 'sine', 0.4), 200);
-        },
-        error: () => playSound(150, 'sawtooth', 0.4, 0.3),
-        tick: () => playSound(1200, 'sine', 0.02, 0.05)
-    };
-
-    // MATRIX BACKGROUND
-    const mCanvas = document.getElementById('matrixBg');
-    const mCtx = mCanvas.getContext('2d');
+    // Matrix
+    const c = document.getElementById('matrixBg'), ctx = c.getContext('2d');
     let drops = [];
-    function initMatrix() {
-        mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight;
-        drops = Array(Math.floor(mCanvas.width/18)).fill(1);
-    }
-    function drawMatrix() {
-        mCtx.fillStyle = "rgba(0,0,0,0.08)"; mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
-        mCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
-        mCtx.font = "15px monospace";
-        drops.forEach((y, i) => {
-            mCtx.fillText(Math.floor(Math.random()*2), i*18, y*18);
-            if(y*18 > mCanvas.height && Math.random() > 0.98) drops[i] = 0;
-            drops[i]++;
+    function init() { c.width = window.innerWidth; c.height = window.innerHeight; drops = Array(Math.floor(c.width/20)).fill(1); }
+    function draw() {
+        ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0,0,c.width,c.height);
+        ctx.fillStyle = "#0f6"; drops.forEach((y, i) => {
+            ctx.fillText(Math.floor(Math.random()*2), i*20, y*20);
+            if(y*20 > c.height && Math.random() > 0.975) drops[i] = 0; drops[i]++;
         });
     }
-    window.addEventListener('resize', initMatrix);
-    initMatrix(); setInterval(drawMatrix, 50);
+    window.addEventListener('resize', init); init(); setInterval(draw, 50);
 
-    // DADOS DO JOGO
-    const NIVEIS_DATA = [
-        [
-            {m: ["0110", "1111", "1111", "0110"], n: "Cápsula", t: 30},
-            {m: ["1001", "0110", "0110", "1001"], n: "X-Virus", t: 30}
-        ],
-        [
-            {m: ["011110", "100001", "101101", "101101", "100001", "011110"], n: "Visor", t: 45},
-            {m: ["001100", "011110", "111111", "111111", "011110", "001100"], n: "Orbital", t: 45}
-        ],
-        [
-            {m: ["00111100", "01111110", "11011011", "11111111", "11111111", "11011011", "01111110", "00111100"], n: "Mainframe", t: 60}
-        ]
+    const NIVEIS = [
+        {m:["0110","1111","1111","0110"], n:"NÚCLEO", t:30},
+        {m:["011110","100001","101101","011110"], n:"CHAVE", t:45},
+        {m:["00111100","01111110","11011011","11111111"], n:"PORTAL", t:60}
     ];
 
-    let mapaBinario = [];
-    let nivelAtual = 0;
-    let tempoRestante = 0;
-    let timerId = null;
-    let progresso = parseInt(localStorage.getItem('pixelProgresso')) || 0;
+    let nivelAtual = 0, timerId = null, progresso = parseInt(localStorage.getItem('pixelProgresso')) || 0;
 
     function jogarNivel(idx) {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        if(idx > progresso) { sfx.error(); return; }
-
+        if(idx > progresso) return;
         nivelAtual = idx;
-        const temas = ["#00ff66", "#38bdf8", "#ff3e00"];
-        document.documentElement.style.setProperty('--accent', temas[idx]);
-        
-        const desenhosDoNivel = NIVEIS_DATA[idx];
-        const sorteio = desenhosDoNivel[Math.floor(Math.random() * desenhosDoNivel.length)];
-        
-        mapaBinario = sorteio.m;
-        document.getElementById('statusFase').textContent = `MOD_0${idx+1}`;
-        document.getElementById('nomeObjeto').textContent = sorteio.n;
-        
-        montarJogo();
-        iniciarTimer(sorteio.t);
-    }
-
-    function iniciarTimer(segundos) {
-        clearInterval(timerId);
-        tempoRestante = segundos;
-        atualizarVisualTimer();
-        timerId = setInterval(() => {
-            tempoRestante--;
-            if(tempoRestante <= 5 && tempoRestante > 0) sfx.tick();
-            atualizarVisualTimer();
-            if(tempoRestante <= 0) {
-                clearInterval(timerId);
-                sfx.error();
-                alert("CONEXÃO PERDIDA: Tempo esgotado.");
-                irParaHome();
-            }
-        }, 1000);
-    }
-
-    function atualizarVisualTimer() {
-        const min = Math.floor(tempoRestante / 60);
-        const seg = tempoRestante % 60;
-        document.getElementById('timer-display').textContent = 
-            `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
-    }
-
-    function montarJogo() {
         document.getElementById('telaMenu').classList.remove('active');
         document.getElementById('jogoTela').classList.add('active');
-        document.getElementById('binaryDisplay').innerHTML = mapaBinario.join('<br>');
-        const grid = document.getElementById('gridDisplay');
-        grid.innerHTML = "";
-        const colunas = mapaBinario[0].length;
-        grid.style.gridTemplateColumns = `repeat(${colunas}, 1fr)`;
+        const d = NIVEIS[idx];
+        document.getElementById('binaryDisplay').innerHTML = d.m.join('<br>');
+        document.getElementById('nomeObjeto').textContent = d.n;
         
-        mapaBinario.forEach(linha => {
-            [...linha].forEach(bit => {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.dataset.bit = bit;
-                cell.onclick = () => { sfx.click(); cell.classList.toggle('active'); };
-                grid.appendChild(cell);
-            });
-        });
+        const g = document.getElementById('gridDisplay');
+        g.innerHTML = "";
+        g.style.gridTemplateColumns = `repeat(${d.m[0].length}, 1fr)`;
+        d.m.forEach(l => [...l].forEach(b => {
+            const cell = document.createElement('div');
+            cell.className = 'cell'; cell.dataset.bit = b;
+            cell.onclick = () => { playSound(600, 'square', 0.05); cell.classList.toggle('active'); };
+            g.appendChild(cell);
+        }));
+
+        let t = d.t;
+        clearInterval(timerId);
+        timerId = setInterval(() => {
+            t--;
+            document.getElementById('timer-display').textContent = `00:${t<10?'0':''}${t}`;
+            if(t<=0) { clearInterval(timerId); irParaHome(); }
+        }, 1000);
     }
 
     function validar() {
@@ -403,28 +248,18 @@
         let erro = false;
         cells.forEach(c => {
             const is1 = c.dataset.bit === "1";
-            const active = c.classList.contains('active');
-            if((is1 && !active) || (!is1 && active)) erro = true;
+            if((is1 && !c.classList.contains('active')) || (!is1 && c.classList.contains('active'))) erro = true;
         });
 
         if(!erro) {
-            clearInterval(timerId);
-            sfx.win();
-            alert("✓ CÓDIGO COMPILADO!");
-            if(nivelAtual === 2) {
-                alert("SISTEMA DECODIFICADO COMPLETAMENTE.");
-                localStorage.removeItem('pixelProgresso');
-                location.reload(); 
-            } else {
-                if(nivelAtual === progresso) {
-                    progresso++;
-                    localStorage.setItem('pixelProgresso', progresso);
-                }
-                irParaHome();
+            playSound(800, 'sine', 0.2);
+            if(nivelAtual === progresso && progresso < 2) {
+                progresso++; localStorage.setItem('pixelProgresso', progresso);
             }
+            alert("SUCESSO!"); irParaHome();
         } else {
-            sfx.error();
-            alert("× FALHA NA COMPILAÇÃO: Bits incorretos.");
+            playSound(150, 'sawtooth', 0.3);
+            alert("FALHA!");
         }
     }
 
@@ -432,23 +267,16 @@
         clearInterval(timerId);
         document.getElementById('jogoTela').classList.remove('active');
         document.getElementById('telaMenu').classList.add('active');
-        atualizarBotoesMenu();
+        atualizarBotoes();
     }
 
-    function atualizarBotoesMenu() {
-        for(let i=0; i<3; i++) {
-            const b = document.getElementById(`fase${i}`);
-            if(i <= progresso) b.classList.add('liberada');
-            else b.classList.remove('liberada');
-        }
+    function atualizarBotoes() {
+        for(let i=0; i<3; i++) document.getElementById(`fase${i}`).classList.toggle('liberada', i <= progresso);
     }
 
-    function limpar() {
-        sfx.click();
-        document.querySelectorAll('.cell').forEach(c => c.classList.remove('active'));
-    }
+    function limpar() { document.querySelectorAll('.cell').forEach(c => c.classList.remove('active')); }
 
-    atualizarBotoesMenu();
+    atualizarBotoes();
 </script>
 </body>
 </html>
